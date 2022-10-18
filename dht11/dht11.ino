@@ -15,11 +15,13 @@ const char* ssid = "ACTEMIUM_ML";
 const char* password = "ACTEMIUM_ML";
 
 //MQTT 
-const char* mqttServer = "192.168.202.15";
+//const char* mqttServer = "192.168.202.15";
+const char* mqttServer = "192.168.1.73";
 const int mqttPort = 1883;
 const char* mqttUser = "mqtt-sender";
 const char* mqttPassword = "4Ve5*36Y%2%XPE";
 const char* clientID = "mqtt-sender";
+String Topic = "plateforme/GB20008";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -111,28 +113,13 @@ String processor(const String& var){
   return String();
 }
 
-void Publish(String DeviceID, float temp, float hum){
+void Publish(String Topic, String DeviceID, float temp, float hum){
   const String jour = DateTime.format(DateFormatter::DATE_ONLY);
   const String heure = DateTime.format(DateFormatter::TIME_ONLY);
 
-  const char* DataJson = "{\"DeviceID\" = \"" + DeviceID + "\",\"temp\" = " + temp + ",\"hum\" = " + hum + ",\"jour\" = " + jour + ",\"heure\" = " + heure + ",}";
-
-  Serial.println(DataJson);
-  client.publish("plateforme/GB20008", DataJson);
-}
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived in topic: ");
-  Serial.println(topic);
- 
-  Serial.print("Message:");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
- 
-  Serial.println();
-  Serial.println("-----------------------");
- 
+  String DataJson = "{\"DeviceID\" = \"" + DeviceID + "\",\"temp\" = " + temp + ",\"hum\" = " + hum + ",\"jour\" = " + jour + ",\"heure\" = " + heure + ",}";
+  client.publish((char*) Topic.c_str(), (char*) DataJson.c_str());
+  Serial.println("Message: " + DataJson);
 }
 
 void setup(){
@@ -155,7 +142,6 @@ void setup(){
 
   //MQTT connexion broker
   client.setServer(mqttServer, mqttPort);
-  client.setCallback(callback);
 
   while (!client.connected()) {
     if (client.connect("ESP8266Client", mqttUser, mqttPassword )) {
@@ -167,15 +153,11 @@ void setup(){
     delay(2000);
   }
 
-  // String DataToSend = String(DataJson(0,0));
-  // const int size = DataToSend.length();
-  // char Data[size];
-  // DataToSend.toCharArray(Data, size);
-  // Serial.println(Data);
-  // client.publish("plateforme/GB20008", Data);
-
-  //LAUNCH Server and define endpoint 
+  Serial.println("--------------------------------------");
   Serial.println(WiFi.localIP());
+  Serial.println("Topic : " + Topic);
+  Serial.println("--------------------------------------");
+  Serial.println("");
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html, processor);
@@ -203,18 +185,7 @@ void loop(){
     }
 
     else {
-      // Serial.println("--------------------");
-      // t = newT;
-      // h = newH;
-      // String StringMQTTRequest= MQTTrequest(t, h);
-      // Serial.println("-> "+ StringMQTTRequest);
-      // char CharMQTTResult[StringMQTTRequest.length()+1];
-      // //Serial.println("-> ", CharMQTTResult)
-      // StringMQTTRequest.toCharArray(CharMQTTResult, StringMQTTRequest.length());
-      // client.publish("plateforme/GB20008", CharMQTTResult);
-      // Serial.println("--------------------");
-
-      Publish("1", 0, 0);
+      Publish(Topic, "1", 0, 0);
     }
   }
 }
